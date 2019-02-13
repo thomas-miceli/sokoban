@@ -14,7 +14,7 @@ $(document).ready(function () {
             td.css('background-color', color)
         };
 
-        this.creerTable = function (obj, lvl) {
+        this.initTable = function (obj, lvl) {
             this.level = lvl;
             $('h2').html('Niveau ' + this.level);
 
@@ -57,38 +57,36 @@ $(document).ready(function () {
                 case 122: // Haut Z
                     this.direction = {x:0, y:-1};
                     break;
-
                 case 113: // Gauche Q
                     this.direction = {x:-1, y:0};
                     break;
-
                 case 115: // Bas S
                     this.direction = {x:0, y:1};
                     break;
-
                 case 100: // Droite D
                     this.direction = {x:1, y:0};
                     break;
             }
 
             // Code assez verbeux mais évite de le dupliquer 4 fois
-            if (this.tableGrid[this.playerPos.y + this.direction.y][this.playerPos.x + this.direction.x] === '#' || ((this.tableGrid[this.playerPos.y + (this.direction.y + this.direction.y)][this.playerPos.x + (this.direction.x + this.direction.x)] === '#' || (this.tableGrid[this.playerPos.y + (this.direction.y + this.direction.y)][this.playerPos.x + (this.direction.x + this.direction.x)] === '$' || this.tableGrid[this.playerPos.y + (this.direction.y + this.direction.y)][this.playerPos.x + (this.direction.x + this.direction.x)] === '*')) && (this.tableGrid[this.playerPos.y + this.direction.y][this.playerPos.x + this.direction.x] === '$' || this.tableGrid[this.playerPos.y + this.direction.y][this.playerPos.x + this.direction.x] === '*'))) {
-                ;
-            } else if (this.tableGrid[this.playerPos.y + this.direction.y][this.playerPos.x + this.direction.x] === '$' || this.tableGrid[this.playerPos.y + this.direction.y][this.playerPos.x + this.direction.x] === '*') {
+            let futurePos = this.tableGrid[this.playerPos.y + this.direction.y][this.playerPos.x + this.direction.x];
+            let futurePos2 = this.tableGrid[this.playerPos.y + (this.direction.y + this.direction.y)][this.playerPos.x + (this.direction.x + this.direction.x)];
+            let futurePosIsBlock = (futurePos === '$' || futurePos === '*');
+            let carryingBlockIntoWall = ((futurePos2 === '#' || futurePos2 === '$' || futurePos2 === '*') && futurePosIsBlock);
+
+            if (futurePos !== '#' && !carryingBlockIntoWall) {
+                if (futurePos === '$' || futurePos === '*') { // Déplacement d'un bloc si besoin
+                    this.tableGrid[this.playerPos.y + (this.direction.y + this.direction.y)][this.playerPos.x + (this.direction.x + this.direction.x)] = '$';
+                }
+                // Ancienne position du joueur devient vide
+                this.color({x:this.playerPos.x, y:this.playerPos.y}, 'white');
                 this.tableGrid[this.playerPos.y][this.playerPos.x] = '+';
-                this.tableGrid[this.playerPos.y + (this.direction.y + this.direction.y)][this.playerPos.x + (this.direction.x + this.direction.x)] = '$';
-                this.tableGrid[this.playerPos.y + this.direction.y][this.playerPos.x + this.direction.x] = '@';
+
+                // Transition vers la nouvelle et affectation des couleurs
                 this.playerPos.x += this.direction.x;
                 this.playerPos.y += this.direction.y;
+                this.tableGrid[this.playerPos.y][this.playerPos.x] = '@';
                 this.color({x:this.playerPos.x, y:this.playerPos.y}, 'red');
-                this.color({x:this.playerPos.x-this.direction.x, y:this.playerPos.y-this.direction.y}, 'white');
-            } else {
-                this.tableGrid[this.playerPos.y][this.playerPos.x] = '+';
-                this.tableGrid[this.playerPos.y + this.direction.y][this.playerPos.x + this.direction.x] = '@';
-                this.playerPos.x += this.direction.x;
-                this.playerPos.y += this.direction.y;
-                this.color({x:this.playerPos.x, y:this.playerPos.y}, 'red');
-                this.color({x:this.playerPos.x-this.direction.x, y:this.playerPos.y-this.direction.y}, 'white');
             }
 
             if (!this.won) {
@@ -129,7 +127,7 @@ $(document).ready(function () {
             btn.click(function () {
                 levelSelected = true;
                 sokoban = new Sokoban();
-                sokoban.creerTable(json.levels[i], json.levels[i].id);
+                sokoban.initTable(json.levels[i], json.levels[i].id);
             });
         }
     }

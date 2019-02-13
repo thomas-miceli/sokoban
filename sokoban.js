@@ -1,4 +1,4 @@
-$(document).ready(function (argument) {
+$(document).ready(function () {
 
     function Sokoban () {
         this.level = 0;                 // L'id du niveau
@@ -8,45 +8,44 @@ $(document).ready(function (argument) {
         this.goals = [];                // Array d'objets de chaque position des points d'arrivée {x: x, y: y}
         this.won = false;               // Si le niveau est gagné ou non
 
+        this.color = function (pos, color) {
+            let tr = $($("tr")[pos.y]);
+            let td = $($("td", tr)[pos.x]);
+            td.css('background-color', color)
+        };
+
         this.creerTable = function (obj, lvl) {
             this.level = lvl;
             $('h2').html('Niveau ' + this.level);
+
+            $('#game').empty(); // Vidage de la grille dans le DOM
+
+            let table = $('<table cellspacing="0"></table>').css({'border': '1px solid black','table-layout':' fixed'}).appendTo('#game'); // Style
+
             let i = 0;
             for (let ob of obj.cells) {
                 this.tableGrid[i] = []; // Initialisation du tableau en 2D
-                for (let j = 0; j < ob.length; j++) {
-                    this.tableGrid[i][j] = ob[j] !== " " || undefined ? ob[j] : '+'; // Si case vide du tableau, on remplace par un +
-                    ob[j] === "." || ob[j] === "*" ? this.goals.push({x:j, y:i}) : undefined;         // On ajoute à notre instance la liste de tous les points d'arrivée
-                }
-                i++;
-            }
-        };
-
-        this.renderTable = function () {
-            $('#game').empty(); // Vidage de la grille dans le DOM
-            let table = $('<table cellspacing="0"></table>').css({
-                'border': '1px solid black',
-                'table-layout':' fixed'
-            }).appendTo('#game'); // Style
-
-            let i = 0;
-            for (let ob of this.tableGrid) {
                 let tr = $('<tr />').appendTo(table); // Ajout de chaque ligne au DOM ...
                 for (let j = 0; j < ob.length; j++) {
-                    let td = $('<td />').append(ob[j]).appendTo(tr).css({'height': '30px','width': '30px', 'color': 'rgba(0, 0, 0, 0)'}); // ainsi que les colonnes
+                    $('<td />').appendTo(tr).css({'height': '30px','width': '30px', 'color': 'rgba(0, 0, 0, 0)'}); // ... ainsi que les colonnes
+                    this.tableGrid[i][j] = ob[j] !== " " || undefined ? ob[j] : '+'; // Si case vide du tableau, on remplace par un + dans notre tableau
+
+                    // Définition des couleurs à afficher + positions joueur & objectifs
                     switch (ob[j]) {
                         case '#': // mur
-                            td.css('background-color', 'gray');break;
+                            this.color({x:j, y:i}, 'gray'); break;
                         case '@': // joueur
                             this.playerPos.y = i;
                             this.playerPos.x = j;
-                            td.css('background-color', 'red');break;
+                            this.color({x:j, y:i}, 'red'); break;
                         case '.': // point d'arrivée
-                            td.css('background-color', 'gold');break;
-                        case '$': // bloc
-                            td.css('background-color', 'cyan');break;
+                            this.goals.push({x:j, y:i})
+                            this.color({x:j, y:i}, 'gold'); break;
                         case '*': // bloc sur un point d'arrivée
-                            td.css('background-color', 'darkcyan');break;
+                            this.goals.push({x:j, y:i})
+                            this.color({x:j, y:i}, 'darkcyan'); break;
+                        case '$': // bloc
+                            this.color({x:j, y:i}, 'cyan'); break;
                     }
                 }
                 i++;
@@ -56,23 +55,19 @@ $(document).ready(function (argument) {
         this.checkMove = function (move) {
             switch (move) {
                 case 122: // Haut Z
-                    this.direction.x = 0;
-                    this.direction.y = -1;
+                    this.direction = {x:0, y:-1};
                     break;
 
                 case 113: // Gauche Q
-                    this.direction.x = -1;
-                    this.direction.y = 0;
+                    this.direction = {x:-1, y:0};
                     break;
 
                 case 115: // Bas S
-                    this.direction.x = 0;
-                    this.direction.y = 1;
+                    this.direction = {x:0, y:1};
                     break;
 
                 case 100: // Droite D
-                    this.direction.x = 1;
-                    this.direction.y = 0;
+                    this.direction = {x:1, y:0};
                     break;
             }
 
@@ -83,26 +78,38 @@ $(document).ready(function (argument) {
                 this.tableGrid[this.playerPos.y][this.playerPos.x] = '+';
                 this.tableGrid[this.playerPos.y + (this.direction.y + this.direction.y)][this.playerPos.x + (this.direction.x + this.direction.x)] = '$';
                 this.tableGrid[this.playerPos.y + this.direction.y][this.playerPos.x + this.direction.x] = '@';
+                this.playerPos.x += this.direction.x;
+                this.playerPos.y += this.direction.y;
+                this.color({x:this.playerPos.x, y:this.playerPos.y}, 'red');
+                this.color({x:this.playerPos.x-this.direction.x, y:this.playerPos.y-this.direction.y}, 'white');
             } else {
                 this.tableGrid[this.playerPos.y][this.playerPos.x] = '+';
                 this.tableGrid[this.playerPos.y + this.direction.y][this.playerPos.x + this.direction.x] = '@';
+                this.playerPos.x += this.direction.x;
+                this.playerPos.y += this.direction.y;
+                this.color({x:this.playerPos.x, y:this.playerPos.y}, 'red');
+                this.color({x:this.playerPos.x-this.direction.x, y:this.playerPos.y-this.direction.y}, 'white');
             }
 
             if (!this.won) {
                 this.won = true;
                 for (let goal of this.goals) {
+                    if (this.tableGrid[goal.y][goal.x] === '$') this.tableGrid[goal.y][goal.x] = '*';
 
-                    if (this.tableGrid[goal.y][goal.x] === '$') {
-                        this.tableGrid[goal.y][goal.x] = '*';
-                    }
+                    // Après que le joueur soit passé dessus, on la redéfinit dans le tableau (aspect visuel)
+                    if (this.tableGrid[goal.y][goal.x] === '+') this.tableGrid[goal.y][goal.x] = '.'
 
-                    if (this.tableGrid[goal.y][goal.x] === '+') { // Après que le joueur soit passé dessus, on la redéfinit dans le tableau (aspect visuel)
-                        this.tableGrid[goal.y][goal.x] = '.'
-                    }
+                    // Si un bloc n'est pas sur le point d'arrivée
+                    if (this.tableGrid[goal.y][goal.x] !== '*') this.won = false;
+                }
+            }
 
-                    if (this.tableGrid[goal.y][goal.x] !== '*') { // Si un bloc n'est pas sur le point d'arrivée
-                        this.won = false;
-                    }
+            // Redéfinition de certaines couleurs
+            for (let i = 0; i < this.tableGrid.length; ++i) {
+                for (let j = 0; j < this.tableGrid[i].length; ++j) {
+                    if (this.tableGrid[i][j] === '$') this.color({y:i,x:j}, 'cyan');
+                    if (this.tableGrid[i][j] === '.') this.color({y:i,x:j}, 'gold');
+                    if (this.tableGrid[i][j] === '*') this.color({y:i,x:j}, 'darkcyan');
                 }
             }
         }
@@ -117,15 +124,12 @@ $(document).ready(function (argument) {
         for (let i = 0; i < json.levels.length; i++) {
             let btn = $('<button />').css('border', '1px solid black').append('LVL ' + (i+1)).appendTo('#btn');
 
-            if (getCookieLvl(i+1)) {
-                btn.css('background-color', 'green');
-            }
+            if (getCookieLvl(i+1)) btn.css('background-color', 'green');
 
             btn.click(function () {
                 levelSelected = true;
                 sokoban = new Sokoban();
                 sokoban.creerTable(json.levels[i], json.levels[i].id);
-                sokoban.renderTable();
             });
         }
     }
@@ -135,7 +139,6 @@ $(document).ready(function (argument) {
     $(document).keypress(function(e) {
         if (levelSelected) {
             sokoban.checkMove(e.which);
-            sokoban.renderTable();
             if (sokoban.won) {
                 alert('gg');
                 if (!getCookieLvl(sokoban.level)) {
@@ -143,9 +146,6 @@ $(document).ready(function (argument) {
                     updateButtons();
                 }
             }
-        } else {
-            alert('Merci de choisir un niveau');
         }
     });
-
 });

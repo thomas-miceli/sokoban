@@ -134,11 +134,15 @@ $(document).ready(function () {
 
         let grid = [];
 
-        for (let i = 0; i < 15; ++i) {
+        for (let i = 0; i < 20; ++i) {
             grid[i] = [];
             let tr = $('<tr />').appendTo(table); // Ajout de chaque ligne au DOM ...
-            for (let j = 0; j < 20; ++j) {
-                $('<td />').appendTo(tr).css({'height': '30px','width': '30px', 'color': 'rgba(0, 0, 0, 0)'}).css('background-color', 'white').data('color', 'white'); // ... ainsi que les colonnes
+            for (let j = 0; j < 25; ++j) {
+                if (i === 0 || i === 19 || j === 0 || j === 24) {
+                    grid[i][j] = '#'
+                } else {
+                    $('<td />').appendTo(tr).css({'height': '30px','width': '30px', 'color': 'rgba(0, 0, 0, 0)'}).css('background-color', 'white').data('color', 'white')// ... ainsi que les colonnes
+                }
             }
         }
 
@@ -161,20 +165,19 @@ $(document).ready(function () {
             let $tr = $(this).closest('tr');
             let row = $tr.index();
 
-            if ($(this).data('color') === 'red') nbJoueur-=1;
-            if ($(this).data('color') === 'cyan') nbBlocs-=1;
-            if ($(this).data('color') === 'gold') nbGoals-=1;
+            if ($(this).data('color') === 'red'  && current !== 'red' ) nbJoueur-=1;
+            if ($(this).data('color') === 'cyan' && current !== 'cyan') nbBlocs-=1;
+            if ($(this).data('color') === 'gold' && current !== 'gold') nbGoals-=1;
 
-            if ($(this).data('color') !== 'red' && current === 'red') nbJoueur+=1;
+            if ($(this).data('color') !== 'red'  && current === 'red' ) nbJoueur+=1;
             if ($(this).data('color') !== 'cyan' && current === 'cyan') nbBlocs+=1;
             if ($(this).data('color') !== 'gold' && current === 'gold') nbGoals+=1;
 
             $(this).data('color', current);
-            console.log(nbJoueur, nbBlocs, nbGoals);
-
-
             $(this).css('background-color', current);
-            grid[row][col] = symbol;
+
+            grid[row][col+1] = symbol;
+
             if (nbGoals !== 0 && nbGoals === nbBlocs && nbJoueur === 1) {
                 start.appendTo('#game');
                 start.click(function () {
